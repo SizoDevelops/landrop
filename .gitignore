@@ -1,0 +1,53 @@
+# ---- Dependencies ----
+node_modules/
+**/node_modules/
+
+# ---- Logs / debug ----
+*.log
+*.err
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# ---- Electron desktop app build output ----
+electron/dist/
+electron/dist-packager/
+
+# ---- Expo / React Native ----
+.expo/
+**/.expo/
+mobile-sdk54/dist/
+mobile-sdk54/web-build/
+mobile-sdk54/expo-env.d.ts
+*.tsbuildinfo
+
+# ---- Android build outputs (the android/ source IS committed) ----
+mobile-sdk54/android/.gradle/
+mobile-sdk54/android/.kotlin/
+mobile-sdk54/android/.cxx/
+mobile-sdk54/android/build/
+mobile-sdk54/android/app/build/
+mobile-sdk54/android/local.properties
+
+# ---- Signing secrets (NEVER commit) ----
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+*.keystore
+# the debug keystore is the public, well-known Android debug key — safe to commit
+!mobile-sdk54/android/app/debug.keystore
+mobile-sdk54/android/app/landrop-upload-key.keystore
+keystore.b64
+keystore-password.txt
+
+# ---- Runtime upload folder (server scratch space) ----
+uploads/*
+!uploads/.gitkeep
+
+# ---- OS / editor cruft ----
+.DS_Store
+Thumbs.db
+*.orig.*

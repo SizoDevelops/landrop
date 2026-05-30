@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LAN Drop — Shared Folder Dashboard</title>
+<style>
+  :root {
+    --bg: oklch(12% 0.010 250);
+    --surface: oklch(18% 0.015 250);
+    --surface2: oklch(22% 0.015 250);
+    --fg: oklch(92% 0.005 250);
+    --fg2: oklch(75% 0.005 250);
+    --muted: oklch(55% 0.015 250);
+    --border: oklch(28% 0.010 250);
+    --accent: oklch(62% 0.18 145);
+    --accent-dim: oklch(50% 0.12 145);
+    --danger: oklch(58% 0.18 30);
+    --warn: oklch(68% 0.18 75);
+    --sidebar: oklch(14% 0.012 250);
+    --font: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:var(--bg);color:var(--fg);
+    font:13.5px/1.5 var(--font);-webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;
+  }
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+  .topbar{
+    display:flex;align-items:center;gap:14px;padding:0 24px;
+    height:48px;background:var(--sidebar);
+    border-bottom:1px solid var(--border);flex-shrink:0;
+  }
+  .topbar .logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;letter-spacing:-.01em;flex-shrink:0}
+  .topbar .logo svg{flex-shrink:0}
+  .topbar .folder-path{
+    flex:1;min-width:0;display:flex;align-items:center;gap:8px;
+    padding:0 12px;height:28px;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:6px;font-family:var(--font-mono);font-size:12px;
+    color:var(--fg2);max-width:420px;
+  }
+  .topbar .folder-path .path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar .broadcast-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:500;flex-shrink:0}
+  .topbar .broadcast-status .dot{
+    width:7px;height:7px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 6px var(--accent-dim);animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .topbar .broadcast-status .badge{
+    font-size:11px;padding:2px 8px;border-radius:10px;
+    background:color-mix(in oklch,var(--accent) 14%,transparent);color:var(--accent);font-weight:600;
+    font-family:var(--font-mono);user-select:all;cursor:pointer;
+  }
+  .topbar .broadcast-status .badge.ro{background:color-mix(in oklch,var(--warn) 18%,transparent);color:var(--warn)}
+
+  .layout{display:flex;flex:1;min-height:0}
+
+  .sidebar{
+    width:200px;flex-shrink:0;background:var(--sidebar);
+    border-right:1px solid var(--border);display:flex;flex-direction:column;padding:8px;
+  }
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;
+    border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;
+    color:var(--fg2);transition:all .12s;user-select:none;
+  }
+  .nav-item:hover{background:var(--surface2);color:var(--fg)}
+  .nav-item.active{background:color-mix(in oklch,var(--accent) 10%,var(--surface));color:var(--accent);font-weight:600}
+  .nav-item svg{flex-shrink:0;opacity:.6}
+  .nav-item.active svg{opacity:1}
+  .nav-item .count{
+    margin-left:auto;font-size:11px;font-weight:600;padding:1px 7px;
+    border-radius:8px;background:var(--surface);color:var(--muted);
+  }
+  .nav-item.active .count{background:color-mix(in oklch,var(--accent) 14%,transparent);color:var(--accent)}
+  .sidebar .spacer{flex:1}
+  .sidebar .bottom-item{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;
+    border-radius:8px;cursor:pointer;font-size:12px;color:var(--muted);transition:all .12s;user-select:none;
+  }
+  .sidebar .bottom-item:hover{background:var(--surface2);color:var(--danger)}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+  .panel{display:none;flex-direction:column;flex:1;min-height:0}
+  .panel.active{display:flex}
+
+  .panel-header{
+    display:flex;align-items:center;gap:16px;padding:14px 24px;
+    border-bottom:1px solid var(--border);flex-shrink:0;min-height:52px;
+  }
+  .panel-header h2{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .panel-header .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+
+  .scroll-area{flex:1;overflow-y:auto;padding:16px 24px 32px}
+
+  .section-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:20px 0 10px;
+  }
+  .section-header:first-child{margin-top:0}
+  .section-header h3{
+    font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--muted);
+  }
+  .section-header .action{
+    font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;
+    padding:4px 10px;border-radius:6px;transition:background .12s;
+  }
+  .section-header .action:hover{background:color-mix(in oklch,var(--accent) 10%,transparent)}
+  .section-header .count{font-size:12px;color:var(--muted)}
+
+  /* ---- Stats ---- */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .stat-card .num{font-size:22px;font-weight:700;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .stat-card .num.accent{color:var(--accent)}
+  .stat-card .num.warn{color:var(--warn)}
+  .stat-card .num.fg2{color:var(--fg2)}
+  .stat-card .label{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+
+  /* ---- Folder path card ---- */
+  .path-card{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 18px;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;margin-bottom:16px;
+  }
+  .path-card .icon{
+    width:40px;height:40px;border-radius:10px;
+    background:color-mix(in oklch,var(--accent) 18%,var(--surface2));
+    display:grid;place-items:center;flex-shrink:0;
+  }
+  .path-card .info{flex:1;min-width:0}
+  .path-card .info .primary{font-size:14px;font-weight:700}
+  .path-card .info .secondary{font-size:12px;color:var(--muted);margin-top:2px}
+  .path-card .info .path-row{font-family:var(--font-mono);font-size:13px;color:var(--accent);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 14px;
+    border:0;border-radius:8px;font:12px/1 var(--font);font-weight:600;
+    cursor:pointer;transition:all .12s;white-space:nowrap;
+  }
+  .btn-primary{background:var(--accent);color:#111}
+  .btn-primary:hover{filter:brightness(1.12)}
+  .btn-muted{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+  .btn-muted:hover{background:var(--surface2);color:var(--fg)}
+  .btn-danger{background:color-mix(in oklch,var(--danger) 14%,transparent);color:var(--danger);border:1px solid color-mix(in oklch,var(--danger) 30%,transparent)}
+  .btn-danger:hover{background:color-mix(in oklch,var(--danger) 24%,transparent)}
+  .btn-sm{height:26px;padding:0 10px;font-size:11px}
+
+  /* ---- Drop zone ---- */
+  .drop-zone{
+    border:2px dashed var(--border);border-radius:12px;
+    padding:32px 20px;text-align:center;margin-bottom:16px;
+    transition:all .15s;cursor:pointer;background:var(--surface);
+  }
+  .drop-zone.drag-over{border-color:var(--accent);background:color-mix(in oklch,var(--accent) 6%,var(--surface))}
+  .drop-zone .icon{margin-bottom:8px}
+  .drop-zone .title{font-size:14px;font-weight:600;color:var(--fg2)}
+  .drop-zone .sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .drop-zone .sub .browse{color:var(--accent);text-decoration:underline;cursor:pointer}
+
+  /* ---- File table ---- */
+  .file-table{width:100%;border-collapse:collapse}
+  .file-table th{
+    text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--muted);padding:8px 10px;
+    border-bottom:1px solid var(--border);user-select:none;
+  }
+  .file-table td{
+    padding:8px 10px;border-bottom:1px solid var(--border);
+    font-size:13px;vertical-align:middle;
+  }
+  .file-table tr{transition:background .1s}
+  .file-table tbody tr:hover td{background:var(--surface)}
+  .file-table .file-info{display:flex;align-items:center;gap:8px}
+  .file-table .file-info .icon{
+    width:28px;height:28px;border-radius:6px;display:grid;place-items:center;flex-shrink:0;
+    font-size:10px;font-weight:700;text-transform:uppercase;
+  }
+  .file-table .file-info .icon.file{background:color-mix(in oklch,var(--accent) 16%,var(--surface2));color:var(--accent)}
+  .file-table .file-info .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px}
+  .file-table .file-sub{font-size:11px;color:var(--muted)}
+  .file-table td.size, .file-table td.modified{font-family:var(--font-mono);font-size:12px;font-variant-numeric:tabular-nums}
+  .file-table td.modified{color:var(--muted)}
+
+  /* Transfer status badges */
+  .status-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;
+    text-transform:uppercase;letter-spacing:.04em;
+  }
+  .status-badge.idle{background:var(--surface2);color:var(--muted)}
+  .status-badge.downloading{background:color-mix(in oklch,var(--accent) 14%,transparent);color:var(--accent)}
+  .status-badge.uploading{background:color-mix(in oklch,var(--warn) 18%,transparent);color:var(--warn)}
+  .status-badge .pulse-dot{
+    width:4px;height:4px;border-radius:50%;animation:pulse 1.5s ease-in-out infinite;
+  }
+  .status-badge.downloading .pulse-dot{background:var(--accent)}
+  .status-badge.uploading .pulse-dot{background:var(--warn)}
+
+  .transfer-progress{margin-top:6px;width:140px}
+  .transfer-progress .track{height:3px;background:var(--surface2);border-radius:3px;overflow:hidden}
+  .transfer-progress .track .fill{
+    height:100%;border-radius:3px;transition:width .4s;
+  }
+  .transfer-progress .track .fill.download{background:linear-gradient(90deg,var(--accent-dim),var(--accent))}
+  .transfer-progress .track .fill.upload{background:linear-gradient(90deg,var(--warn),color-mix(in oklch,var(--warn) 60%,#fff))}
+  .transfer-progress .meta{
+    display:flex;justify-content:space-between;font-size:10px;
+    font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+    margin-top:2px;color:var(--muted);
+  }
+
+  /* Keep this a real table-cell (no display:flex on a <td>, which would break
+     border-collapse and stagger the row divider lines). */
+  td.file-actions{text-align:right;white-space:nowrap}
+  td.file-actions .btn+.btn{margin-left:4px}
+
+  /* ---- Activity log ---- */
+  .activity-item{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:10px 14px;background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;margin-bottom:6px;
+  }
+  .activity-item .act-icon{
+    width:32px;height:32px;border-radius:8px;
+    display:grid;place-items:center;flex-shrink:0;
+  }
+  .activity-item .act-icon.dl{background:color-mix(in oklch,var(--accent) 16%,var(--surface2));color:var(--accent)}
+  .activity-item .act-icon.ul{background:color-mix(in oklch,var(--warn) 18%,var(--surface2));color:var(--warn)}
+  .activity-item .act-body{flex:1;min-width:0}
+  .activity-item .act-body .primary{font-size:13px;font-weight:600}
+  .activity-item .act-body .primary .highlight{color:var(--accent)}
+  .activity-item .act-body .secondary{font-size:11px;color:var(--muted);margin-top:1px}
+  .activity-item .act-progress{margin-top:6px;width:100%;max-width:220px}
+  .activity-item .act-progress .track{height:3px;background:var(--surface2);border-radius:3px;overflow:hidden}
+  .activity-item .act-progress .track .fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .4s}
+  .activity-item .act-progress .track .fill.upload{background:linear-gradient(90deg,var(--warn),color-mix(in oklch,var(--warn) 60%,#fff))}
+  .activity-item .act-progress .meta{font-size:10px;font-family:var(--font-mono);color:var(--muted);font-variant-numeric:tabular-nums;margin-top:1px;display:flex;justify-content:space-between}
+  .activity-item .act-time{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+
+  /* ---- Device list ---- */
+  .device-item{
+    display:flex;align-items:center;gap:12px;
+    padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;
+  }
+  .device-item .device-icon{
+    width:34px;height:34px;border-radius:8px;
+    background:color-mix(in oklch,var(--accent) 14%,var(--surface2));
+    display:grid;place-items:center;flex-shrink:0;
+  }
+  .device-item .device-meta{flex:1;min-width:0}
+  .device-item .device-meta .name{font-size:13px;font-weight:600}
+  .device-item .device-meta .sub{font-size:11px;color:var(--muted)}
+  .device-item .status-indicator{
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;
+    background:color-mix(in oklch,var(--accent) 14%,transparent);
+    color:var(--accent);text-transform:uppercase;letter-spacing:.04em;
+  }
+  .device-item .status-indicator.offline{background:var(--surface2);color:var(--muted)}
+
+  /* ---- Settings ---- */
+  .settings-group{margin-bottom:16px}
+  .settings-group .sg-title{
+    font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--muted);margin-bottom:6px;padding:0 2px;
+  }
+  .settings-group .sg-items{
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  }
+  .setting-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;min-height:40px;gap:12px;
+  }
+  .setting-row+.setting-row{border-top:1px solid var(--border)}
+  .setting-row .left{min-width:0}
+  .setting-row .left .label{font-size:13px;font-weight:600}
+  .setting-row .left .hint{font-size:11px;color:var(--muted);margin-top:1px}
+  .setting-row .right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .setting-row .value{font-size:13px;color:var(--fg2);font-weight:500}
+  .setting-row .value.mono{font-family:var(--font-mono);font-size:13px;word-break:break-all}
+  .setting-row .value.accent{color:var(--accent);font-weight:600}
+
+  .toggle{
+    width:40px;height:22px;border-radius:11px;background:var(--surface2);
+    border:1px solid var(--border);cursor:pointer;position:relative;transition:all .15s;flex-shrink:0;
+  }
+  .toggle.on{background:var(--accent);border-color:var(--accent)}
+  .toggle::after{
+    content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;
+    border-radius:50%;background:var(--fg);transition:transform .15s;
+  }
+  .toggle.on::after{transform:translateX(18px);background:#111}
+
+  .footer-bar{
+    display:flex;align-items:center;gap:16px;padding:0 24px;
+    height:36px;background:var(--sidebar);border-top:1px solid var(--border);
+    font-size:11px;color:var(--muted);flex-shrink:0;
+  }
+  .footer-bar .right{margin-left:auto;display:flex;gap:16px}
+
+  .empty-state{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:48px 20px;text-align:center;color:var(--muted);
+  }
+  .empty-state .big{font-size:13px;font-weight:600;color:var(--fg2);margin-top:10px}
+  .empty-state .sub{font-size:12px;margin-top:4px}
+
+  @media(max-width:820px){
+    .sidebar{width:56px}
+    .sidebar .nav-item span,.sidebar .nav-item .count,.sidebar .bottom-item span{display:none}
+    .sidebar .nav-item,.sidebar .bottom-item{justify-content:center;padding:10px}
+    .stats-row{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:600px){
+    .stats-row{grid-template-columns:1fr 1fr}
+    .file-table th:nth-child(3),.file-table td.modified{display:none}
+    .transfer-progress{width:100px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect x="2" y="8" width="18" height="12" rx="2" stroke="var(--accent)" stroke-width="1.5" fill="none"></rect>
+      <rect x="4" y="13" width="3" height="3" rx=".8" fill="var(--accent)" opacity=".6"></rect>
+      <rect x="9" y="13" width="3" height="3" rx=".8" fill="var(--accent)" opacity=".6"></rect>
+      <path d="M7 8V6a4 4 0 0 1 8 0v2" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"></path>
+      <path d="M11 11v5m0 0 2-2m-2 2-2-2" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+    LAN Drop
+  </div>
+  <div class="folder-path">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--muted)" stroke-width="1.3"><path d="M1 5.5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-5z" fill="var(--muted)" opacity=".1" stroke="var(--muted)"></path></svg>
+    <span class="path" id="topbarPath">…</span>
+    <button class="btn btn-sm btn-muted" style="margin-left:auto;flex-shrink:0" id="topbarChange">Change</button>
+  </div>
+  <div class="broadcast-status">
+    <span class="dot"></span>
+    <span class="badge" id="broadcastBadge" title="Type this into the phone app">…</span>
+    <span class="badge ro" id="readonlyBadge" style="display:none">Read-only</span>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="nav-item active" data-panel="folder">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4a1 1 0 0 1 1-1h4l2 2h6a1 1 0 0 1 1 1v1H2V4z"></path><path d="M2 7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7z"></path></svg>
+      <span>Shared Folder</span>
+      <span class="count" id="fileCount">0</span>
+    </div>
+    <div class="nav-item" data-panel="activity">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h3l2-5 2 10 2-5h3"></path></svg>
+      <span>Activity</span>
+      <span class="count" id="activeCount">0</span>
+    </div>
+    <div class="nav-item" data-panel="devices">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="14" height="14" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="M5 14c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"></path></svg>
+      <span>Devices</span>
+      <span class="count" id="deviceCount">0</span>
+    </div>
+    <div class="nav-item" data-panel="settings">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="2.5"></circle><path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.4 3.4l1.4 1.4M13.2 13.2l1.4 1.4M3.4 14.6l1.4-1.4M13.2 4.8l1.4-1.4"></path></svg>
+      <span>Settings</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-item" id="stopServerSidebar">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+      <span>Stop Server</span>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- ============ PANEL: SHARED FOLDER ============ -->
+    <div class="panel active" id="panel-folder">
+      <div class="panel-header">
+        <h2>Shared Folder</h2>
+        <div class="right">
+          <span style="font-size:12px;color:var(--muted)" id="folderSummary">…</span>
+          <button class="btn btn-sm btn-muted" id="openFolderBtn">Open folder</button>
+        </div>
+      </div>
+      <div class="scroll-area">
+
+        <div class="drop-zone" id="dropZone">
+          <div class="icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 8v16m0-8-4 4m4-4 4 4"></path><path d="M8 28v2a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2v-2"></path>
+            </svg>
+          </div>
+          <div class="title">Drop files to add to the shared folder</div>
+          <div class="sub">or <span class="browse">browse</span> to select files</div>
+          <input type="file" id="fileInput" multiple style="display:none">
+        </div>
+
+        <div class="path-card">
+          <div class="icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v1H2V5z"></path><path d="M2 8a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8z"></path></svg>
+          </div>
+          <div class="info">
+            <div class="primary">Current shared folder</div>
+            <div class="path-row" id="pathRow">…</div>
+            <div class="secondary" id="pathSecondary">…</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="changeFolderBtn">Change Folder</button>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card"><div class="num accent" id="statDownloading">0</div><div class="label">Downloading</div></div>
+          <div class="stat-card"><div class="num warn" id="statUploading">0</div><div class="label">Uploading</div></div>
+          <div class="stat-card"><div class="num fg2" id="statIdle">0</div><div class="label">Idle Files</div></div>
+          <div class="stat-card"><div class="num fg2" id="statTotal">0</div><div class="label">MB Total</div></div>
+        </div>
+
+        <div class="section-header">
+          <h3>Files</h3>
+          <span class="count" id="filesSectionCount"></span>
+        </div>
+
+        <table class="file-table">
+          <thead>
+            <tr><th>Name</th><th>Size</th><th class="modified">Modified</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="fileList"></tbody>
+        </table>
+        <div id="filesEmpty" class="empty-state" style="display:none">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"></path></svg>
+          <div class="big">No files in the shared folder yet</div>
+          <div class="sub">Drop files above, or send some from a connected phone</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PANEL: ACTIVITY ============ -->
+    <div class="panel" id="panel-activity">
+      <div class="panel-header">
+        <h2>Activity</h2>
+        <div class="right"><span style="font-size:12px;color:var(--muted)" id="activitySummary">0 active transfers</span></div>
+      </div>
+      <div class="scroll-area">
+        <div class="section-header"><h3>Active Transfers</h3></div>
+        <div id="activeList"></div>
+        <div id="activeEmpty" class="empty-state" style="display:none">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h4l3-7 3 14 3-7h3"></path></svg>
+          <div class="big">No active transfers</div>
+          <div class="sub">Live uploads and downloads will appear here</div>
+        </div>
+
+        <div class="section-header" style="margin-top:24px"><h3>Recent History</h3></div>
+        <div id="historyList"></div>
+        <div id="historyEmpty" class="empty-state" style="display:none">
+          <div class="sub">Nothing transferred yet this session</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PANEL: DEVICES ============ -->
+    <div class="panel" id="panel-devices">
+      <div class="panel-header"><h2>Connected Devices</h2><div class="right"><span style="font-size:12px;color:var(--muted)" id="devicesSummary">0 connected</span></div></div>
+      <div class="scroll-area">
+        <div class="section-header"><h3>Devices seen this session</h3></div>
+        <div id="deviceList"></div>
+        <div id="devicesEmpty" class="empty-state" style="display:none">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="12" cy="11" r="2.5"></circle><path d="M7 18c0-2.5 2.2-4 5-4s5 1.5 5 4"></path></svg>
+          <div class="big">No devices yet</div>
+          <div class="sub">Phones that connect to this server will show up here</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PANEL: SETTINGS ============ -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-header"><h2>Settings</h2></div>
+      <div class="scroll-area">
+
+        <div class="settings-group">
+          <div class="sg-title">Shared Folder</div>
+          <div class="sg-items">
+            <div class="setting-row">
+              <div class="left">
+                <div class="label">Current folder</div>
+                <div class="hint">This folder is shared with connected phones</div>
+              </div>
+              <div class="right"><button class="btn btn-primary btn-sm" id="settingsChangeFolder">Change…</button></div>
+            </div>
+            <div class="setting-row">
+              <div class="left"><div class="label">Path</div></div>
+              <div class="right"><span class="value mono accent" id="settingsPath">…</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="sg-title">Broadcast</div>
+          <div class="sg-items">
+            <div class="setting-row"><div class="left"><div class="label">Phone URL</div><div class="hint">Type this into the phone app</div></div><div class="right"><span class="value mono accent" id="settingsUrl">…</span></div></div>
+            <div class="setting-row"><div class="left"><div class="label">LAN address</div><div class="hint">This PC on the local network</div></div><div class="right"><span class="value mono" id="settingsIp">…</span></div></div>
+            <div class="setting-row"><div class="left"><div class="label">Port</div><div class="hint">TCP port for file transfers</div></div><div class="right"><span class="value mono" id="settingsPort">…</span></div></div>
+            <div class="setting-row"><div class="left"><div class="label">Server name</div><div class="hint">Hostname phones discover on the LAN</div></div><div class="right"><span class="value mono" id="settingsHost">…</span></div></div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="sg-title">Access Control</div>
+          <div class="sg-items">
+            <div class="setting-row"><div class="left"><div class="label">Read-only mode</div><div class="hint">Phones can download but not upload or delete</div></div><div class="right"><div class="toggle" id="readonlyToggle"></div></div></div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="sg-title">About</div>
+          <div class="sg-items">
+            <div class="setting-row"><div class="left"><div class="label">LAN Drop</div><div class="hint">Tiny LAN file-drop server</div></div><div class="right"><span class="value" style="color:var(--muted)" id="settingsVersion">…</span></div></div>
+          </div>
+        </div>
+
+        <button class="btn btn-danger" style="height:36px;padding:0 18px;border-radius:10px;margin-top:8px;font-size:13px" id="stopServerBtn">Stop Server</button>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer-bar">
+  <span id="footerShared">Shared: …</span>
+  <span class="right"><span id="footerDevices">0 devices · 0 active transfers</span><span id="footerBroadcast">● Broadcasting</span></span>
+</div>
+
+<script>
+  var hasAPI = !!window.electronAPI;
+
+  // ---- Helpers ----
+  function fmtSize(n){
+    if(n == null) return "—";
+    if(n < 1024) return n + " B";
+    if(n < 1048576) return (n/1024).toFixed(1) + " KB";
+    if(n < 1073741824) return (n/1048576).toFixed(1) + " MB";
+    return (n/1073741824).toFixed(2) + " GB";
+  }
+  function fmtSpeed(n){ return fmtSize(n) + "/s"; }
+  function fmtAgo(ms){
+    var s = Math.max(0, Math.round(ms/1000));
+    if(s < 60) return s + " sec";
+    var m = Math.round(s/60);
+    if(m < 60) return m + " min";
+    var h = Math.round(m/60);
+    if(h < 24) return h + " hr";
+    return Math.round(h/24) + " d";
+  }
+  function fmtDur(ms){
+    var s = ms/1000;
+    if(s < 1) return Math.round(ms) + " ms";
+    if(s < 60) return s.toFixed(s < 10 ? 1 : 0) + " sec";
+    return Math.round(s/60) + " min";
+  }
+  function fmtModified(ms){
+    if(!ms) return "—";
+    try { return new Date(ms).toISOString().slice(0,10); } catch(_) { return "—"; }
+  }
+  function el(tag, cls, text){
+    var e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(text != null) e.textContent = text;
+    return e;
+  }
+  function deviceLabel(d){
+    if(!d) return null;
+    return d.deviceName || d.name || d.ip || null;
+  }
+
+  // ---- Panel navigation ----
+  var navItems = document.querySelectorAll('.nav-item[data-panel]');
+  var panelMap = {};
+  document.querySelectorAll('.panel').forEach(function(p){ panelMap[p.id.replace('panel-','')] = p; });
+  function goPanel(id){
+    navItems.forEach(function(n){ n.classList.toggle('active', n.getAttribute('data-panel') === id); });
+    Object.keys(panelMap).forEach(function(k){ panelMap[k].classList.toggle('active', k === id); });
+  }
+  navItems.forEach(function(item){
+    item.addEventListener('click', function(){ goPanel(this.getAttribute('data-panel')); });
+  });
+
+  // ---- Upload (drop / browse) ----
+  var dropZone = document.getElementById('dropZone');
+  var fileInput = document.getElementById('fileInput');
+  ['dragenter','dragover'].forEach(function(ev){
+    dropZone.addEventListener(ev, function(e){ e.preventDefault(); dropZone.classList.add('drag-over'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    dropZone.addEventListener(ev, function(e){ e.preventDefault(); dropZone.classList.remove('drag-over'); });
+  });
+  dropZone.addEventListener('click', function(e){
+    if(e.target && e.target.classList.contains('browse')) return; // handled below
+    fileInput.click();
+  });
+  dropZone.querySelector('.browse').addEventListener('click', function(e){ e.stopPropagation(); fileInput.click(); });
+  dropZone.addEventListener('drop', function(e){
+    e.preventDefault();
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if(files) Array.prototype.forEach.call(files, uploadFile);
+  });
+  fileInput.addEventListener('change', function(){
+    Array.prototype.forEach.call(fileInput.files, uploadFile);
+    fileInput.value = '';
+  });
+
+  function uploadFile(file){
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload');
+    xhr.setRequestHeader('X-Filename', encodeURIComponent(file.name));
+    xhr.setRequestHeader('X-Device-Name', encodeURIComponent('This PC'));
+    xhr.onload = function(){ poll(); };
+    xhr.onerror = function(){ poll(); };
+    xhr.send(file);
+  }
+
+  // ---- Rendering ----
+  var lastFiles = '';
+  function render(status){
+    if(!status) return;
+    var srv = status.server || {};
+    var stats = status.stats || {};
+    var files = status.files || [];
+    var active = status.transfers || [];
+    var history = status.history || [];
+    var devices = status.devices || [];
+
+    // index active transfers by file name
+    var byName = {};
+    active.forEach(function(t){ byName[t.name] = t; });
+
+    // Topbar + settings + footer
+    document.getElementById('topbarPath').textContent = srv.uploadDir || '';
+    document.getElementById('topbarPath').title = srv.uploadDir || '';
+    var badge = document.getElementById('broadcastBadge');
+    badge.textContent = (srv.ip || '127.0.0.1') + ':' + (srv.port || '');
+    document.getElementById('readonlyBadge').style.display = srv.readOnly ? '' : 'none';
+
+    document.getElementById('pathRow').textContent = srv.uploadDir || '';
+    document.getElementById('pathSecondary').textContent =
+      files.length + ' file' + (files.length === 1 ? '' : 's') + ' · ' + fmtSize(stats.totalBytes || 0) +
+      ' · Broadcasting on ' + (srv.ip || '') + ':' + (srv.port || '');
+
+    document.getElementById('settingsPath').textContent = srv.uploadDir || '';
+    document.getElementById('settingsUrl').textContent = srv.url || '';
+    document.getElementById('settingsIp').textContent = srv.ip || '';
+    document.getElementById('settingsPort').textContent = srv.port || '';
+    document.getElementById('settingsHost').textContent = srv.host || '';
+    document.getElementById('settingsVersion').textContent = 'Version ' + (srv.version || '');
+    document.getElementById('readonlyToggle').classList.toggle('on', !!srv.readOnly);
+
+    document.getElementById('footerShared').textContent = 'Shared: ' + (srv.uploadDir || '');
+    document.getElementById('footerBroadcast').textContent = '● Broadcasting on ' + (srv.ip || '') + ':' + (srv.port || '');
+    document.getElementById('footerDevices').textContent =
+      devices.filter(function(d){ return d.online; }).length + ' device(s) · ' + active.length + ' active transfer(s)';
+
+    document.getElementById('folderSummary').textContent = files.length + ' file' + (files.length === 1 ? '' : 's');
+
+    // Sidebar counts
+    document.getElementById('fileCount').textContent = files.length;
+    document.getElementById('activeCount').textContent = active.length;
+    document.getElementById('deviceCount').textContent = devices.filter(function(d){ return d.online; }).length;
+
+    // Stats
+    document.getElementById('statDownloading').textContent = stats.downloading || 0;
+    document.getElementById('statUploading').textContent = stats.uploading || 0;
+    document.getElementById('statIdle').textContent = Math.max(0, files.length - Object.keys(byName).length);
+    document.getElementById('statTotal').textContent = Math.round((stats.totalBytes || 0) / 1048576);
+
+    renderFiles(files, byName, srv.readOnly);
+    renderActive(active);
+    renderHistory(history);
+    renderDevices(devices);
+  }
+
+  function renderFiles(files, byName, readOnly){
+    var tbody = document.getElementById('fileList');
+    var empty = document.getElementById('filesEmpty');
+    document.getElementById('filesSectionCount').textContent = files.length ? (files.length + ' total') : '';
+    if(!files.length){ tbody.innerHTML = ''; empty.style.display = ''; return; }
+    empty.style.display = 'none';
+
+    // Only re-render the table when the underlying file set changes; otherwise
+    // patch live status cells so download/upload bars animate smoothly.
+    var sig = files.map(function(f){ return f.name + ':' + f.size + ':' + f.mtime; }).join('|');
+    if(sig !== lastFiles){
+      lastFiles = sig;
+      tbody.innerHTML = '';
+      files.forEach(function(f){
+        var tr = document.createElement('tr');
+        tr.dataset.name = f.name;
+
+        var tdName = el('td');
+        var info = el('div', 'file-info');
+        var icon = el('div', 'file-info-icon icon file', extOf(f.name));
+        icon.className = 'icon file';
+        var nameWrap = el('div');
+        nameWrap.appendChild(el('div', 'name', f.name));
+        nameWrap.appendChild(el('div', 'file-sub', typeLabel(f.name)));
+        info.appendChild(icon); info.appendChild(nameWrap);
+        tdName.appendChild(info);
+
+        var tdSize = el('td', 'size', fmtSize(f.size));
+        var tdMod = el('td', 'modified', fmtModified(f.mtime));
+        var tdStatus = el('td', 'status-cell');
+        var tdAct = el('td', 'file-actions');
+        var del = el('button', 'btn btn-sm btn-muted', 'Delete');
+        del.addEventListener('click', function(){
+          if(!confirm('Delete ' + f.name + '?')) return;
+          tr.style.opacity = '.3';
+          fetch('/files/' + encodeURIComponent(f.name), { method: 'DELETE' }).then(function(r){
+            if(!r.ok){ tr.style.opacity = ''; alert('Delete failed'); }
+            poll();
+          });
+        });
+        tdAct.appendChild(del);
+
+        tr.appendChild(tdName); tr.appendChild(tdSize); tr.appendChild(tdMod);
+        tr.appendChild(tdStatus); tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Patch status cells + disable delete in read-only mode
+    Array.prototype.forEach.call(tbody.children, function(tr){
+      var t = byName[tr.dataset.name];
+      var cell = tr.querySelector('.status-cell');
+      cell.innerHTML = statusCellHtml(t);
+      var del = tr.querySelector('.file-actions .btn');
+      if(del){ del.disabled = !!readOnly; del.style.opacity = readOnly ? '.4' : ''; del.style.cursor = readOnly ? 'not-allowed' : 'pointer'; }
+    });
+  }
+
+  function statusCellHtml(t){
+    if(!t){ return '<span class="status-badge idle">Idle</span>'; }
+    var dir = t.kind === 'upload' ? 'uploading' : 'downloading';
+    var label = t.kind === 'upload' ? 'Uploading' : 'Downloading';
+    return '<span class="status-badge ' + dir + '"><span class="pulse-dot"></span>' + label + '</span>' +
+      '<div class="transfer-progress"><div class="track"><div class="fill ' + (t.kind === 'upload' ? 'upload' : 'download') + '" style="width:' + t.pct + '%"></div></div>' +
+      '<div class="meta"><span>' + t.pct + '%</span><span>' + fmtSpeed(t.speed || 0) + '</span></div></div>';
+  }
+
+  function renderActive(active){
+    var list = document.getElementById('activeList');
+    var empty = document.getElementById('activeEmpty');
+    document.getElementById('activitySummary').textContent = active.length + ' active transfer' + (active.length === 1 ? '' : 's');
+    list.innerHTML = '';
+    if(!active.length){ empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    active.forEach(function(t){
+      var up = t.kind === 'upload';
+      var dev = deviceLabel(t) || t.ip;
+      var item = el('div', 'activity-item');
+      var ic = el('div', 'act-icon ' + (up ? 'ul' : 'dl'));
+      ic.innerHTML = up
+        ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5m0 4 3-3m-3 3-3-3"></path><path d="M3 4v-.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1V4"></path></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v8m0-4-3 3m3-3 3 3"></path><path d="M3 12v.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V12"></path></svg>';
+      var body = el('div', 'act-body');
+      var primary = el('div', 'primary');
+      primary.innerHTML = '<span class="highlight">' + escapeHtml(t.name) + '</span> ' +
+        (up ? 'uploading from ' : 'downloading to ') + escapeHtml(dev);
+      body.appendChild(primary);
+      body.appendChild(el('div', 'secondary', 'Started ' + fmtAgo(t.ageMs) + ' ago · ' + escapeHtml(dev)));
+      var prog = el('div', 'act-progress');
+      prog.innerHTML = '<div class="track"><div class="fill ' + (up ? 'upload' : '') + '" style="width:' + t.pct + '%"></div></div>' +
+        '<div class="meta"><span>' + t.pct + '% · ' + fmtSize(t.bytes) + ' / ' + fmtSize(t.total) + '</span><span>' + fmtSpeed(t.speed || 0) + '</span></div>';
+      body.appendChild(prog);
+      item.appendChild(ic); item.appendChild(body);
+      item.appendChild(el('div', 'act-time', fmtAgo(t.ageMs)));
+      list.appendChild(item);
+    });
+  }
+
+  function renderHistory(history){
+    var list = document.getElementById('historyList');
+    var empty = document.getElementById('historyEmpty');
+    list.innerHTML = '';
+    if(!history.length){ empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    var nowGuess = history.length ? history[0].at : 0;
+    history.forEach(function(h){
+      var up = h.kind === 'upload';
+      var dev = deviceLabel(h) || h.ip;
+      var item = el('div', 'activity-item');
+      var ic = el('div', 'act-icon ' + (up ? 'ul' : 'dl'));
+      ic.innerHTML = up
+        ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5m0 4 3-3m-3 3-3-3"></path><path d="M3 4v-.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1V4"></path></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v8m0-4-3 3m3-3 3 3"></path><path d="M3 12v.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V12"></path></svg>';
+      var body = el('div', 'act-body');
+      var primary = el('div', 'primary');
+      primary.innerHTML = '<span class="highlight">' + escapeHtml(h.name) + '</span> ' +
+        (up ? 'uploaded from ' : 'downloaded by ') + escapeHtml(dev);
+      body.appendChild(primary);
+      body.appendChild(el('div', 'secondary', 'Completed — ' + fmtSize(h.total) + ' in ' + fmtDur(h.durationMs)));
+      item.appendChild(ic); item.appendChild(body);
+      item.appendChild(el('div', 'act-time', fmtAgo(Math.max(0, nowGuess - h.at)) + ' ago'));
+      list.appendChild(item);
+    });
+  }
+
+  function renderDevices(devices){
+    var list = document.getElementById('deviceList');
+    var empty = document.getElementById('devicesEmpty');
+    var online = devices.filter(function(d){ return d.online; }).length;
+    document.getElementById('devicesSummary').textContent = online + ' connected';
+    list.innerHTML = '';
+    if(!devices.length){ empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    devices.forEach(function(d){
+      var item = el('div', 'device-item');
+      if(!d.online) item.style.opacity = '.6';
+      var ic = el('div', 'device-icon');
+      ic.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="3" stroke="' + (d.online ? 'var(--accent)' : 'var(--muted)') + '" stroke-width="1.5" fill="none"></rect><circle cx="9" cy="9" r="2" stroke="' + (d.online ? 'var(--accent)' : 'var(--muted)') + '" stroke-width="1.2" fill="none"></circle></svg>';
+      var meta = el('div', 'device-meta');
+      meta.appendChild(el('div', 'name', d.name || d.ip));
+      var actions = [];
+      if(d.activeDownloads) actions.push('downloading ' + d.activeDownloads + ' file' + (d.activeDownloads === 1 ? '' : 's'));
+      if(d.activeUploads) actions.push('uploading ' + d.activeUploads + ' file' + (d.activeUploads === 1 ? '' : 's'));
+      if(!actions.length) actions.push(d.completed + ' transfer' + (d.completed === 1 ? '' : 's') + ' completed');
+      var subParts = [d.ip].concat(actions);
+      subParts.push(d.online ? 'last seen ' + fmtAgo(Date.now() - d.lastSeen) + ' ago' : 'disconnected');
+      meta.appendChild(el('div', 'sub', subParts.join(' · ')));
+      var status;
+      if(d.activeUploads) status = el('span', 'status-indicator', 'Uploading');
+      else if(d.activeDownloads) status = el('span', 'status-indicator', 'Downloading');
+      else if(d.online) status = el('span', 'status-indicator', 'Online');
+      else status = el('span', 'status-indicator offline', 'Offline');
+      item.appendChild(ic); item.appendChild(meta); item.appendChild(status);
+      list.appendChild(item);
+    });
+  }
+
+  function extOf(name){
+    var i = name.lastIndexOf('.');
+    var e = i >= 0 ? name.slice(i + 1) : '';
+    return e ? e.slice(0, 4) : 'FILE';
+  }
+  function typeLabel(name){
+    var i = name.lastIndexOf('.');
+    var e = i >= 0 ? name.slice(i + 1).toUpperCase() : '';
+    return e ? e + ' File' : 'File';
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  // ---- Polling ----
+  var polling = false;
+  function poll(){
+    if(polling) return;
+    polling = true;
+    fetch('/status', { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(render)
+      .catch(function(){})
+      .finally(function(){ polling = false; });
+  }
+
+  // ---- Electron-only wiring ----
+  function refreshAndPoll(){ poll(); }
+  document.getElementById('openFolderBtn').addEventListener('click', function(){ if(hasAPI) window.electronAPI.openUploadFolder(); });
+  function pickFolder(){
+    if(!hasAPI) return;
+    window.electronAPI.pickUploadFolder().then(function(){ poll(); });
+  }
+  document.getElementById('topbarChange').addEventListener('click', pickFolder);
+  document.getElementById('changeFolderBtn').addEventListener('click', pickFolder);
+  document.getElementById('settingsChangeFolder').addEventListener('click', pickFolder);
+
+  document.getElementById('readonlyToggle').addEventListener('click', function(){
+    if(!hasAPI) return;
+    var next = !this.classList.contains('on');
+    this.classList.toggle('on', next);
+    window.electronAPI.setReadOnly(next).then(function(){ poll(); });
+  });
+
+  function stopServer(){
+    if(!hasAPI) return;
+    if(confirm('Stop the LAN Drop server and quit? Phones will no longer be able to connect.')) window.electronAPI.quitApp();
+  }
+  document.getElementById('stopServerBtn').addEventListener('click', stopServer);
+  document.getElementById('stopServerSidebar').addEventListener('click', stopServer);
+
+  document.getElementById('broadcastBadge').addEventListener('click', function(){
+    var t = this.textContent;
+    if(navigator.clipboard) navigator.clipboard.writeText('http://' + t + '/').catch(function(){});
+  });
+
+  if(hasAPI && window.electronAPI.onFilesChanged) window.electronAPI.onFilesChanged(refreshAndPoll);
+
+  poll();
+  setInterval(poll, 1000);
+</script>
+</body>
+</html>

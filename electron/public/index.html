@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LAN Drop</title>
+<style>
+  :root{
+    --bg:oklch(12% 0.010 250);--card:oklch(18% 0.015 250);--card2:oklch(22% 0.015 250);
+    --border:oklch(28% 0.010 250);--border-live:oklch(50% 0.12 145);
+    --text:oklch(92% 0.005 250);--muted:oklch(75% 0.005 250);--faint:oklch(55% 0.015 250);
+    --accent:oklch(62% 0.18 145);--accent-dim:color-mix(in oklch,oklch(62% 0.18 145) 14%,transparent);
+    --ok:oklch(62% 0.18 145);--ok-dim:oklch(30% 0.10 145);--err:oklch(58% 0.18 30);--err-dim:oklch(30% 0.10 30);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{display:flex;flex-direction:column;padding:20px;gap:14px;overflow:hidden}
+  .header{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:12px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#111}
+  h1{font-size:21px;font-weight:800;margin:0;letter-spacing:-.3px}
+  .sub{color:var(--muted);font-size:13px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+  .card .lbl{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+  .url{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--accent);font-size:22px;font-weight:700;margin-top:8px;user-select:all;word-break:break-all}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .spacer{flex:1}
+  .dir{color:var(--faint);font-size:12px;word-break:break-all}
+  button{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:9px;
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+  button:hover{background:#2a2f3a}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#111;font-weight:700}
+  button.primary:hover{filter:brightness(1.12)}
+  .mt10{margin-top:12px}
+  .drop{flex:1;min-height:120px;border:2px dashed var(--border);border-radius:16px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    background:var(--card);cursor:pointer;transition:border-color .15s,background .15s;text-align:center}
+  .drop.over{border-color:var(--accent);background:var(--accent-dim)}
+  .drop .big{font-size:17px;font-weight:700}
+  .drop .hint{color:var(--muted);font-size:13px}
+  input[type=file]{display:none}
+  .section{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+  .section .lbl{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+  .scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}
+  .xfer{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:6px}
+  .xfer .top{display:flex;justify-content:space-between;gap:8px}
+  .xfer .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .xfer .st{color:var(--muted);font-size:12px;white-space:nowrap}
+  .xfer.done .st{color:var(--ok)} .xfer.err .st{color:var(--err)}
+  .bar{height:3px;background:#0b0d11;border-radius:2px;overflow:hidden}
+  .bar>div{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+  .xfer.done .bar>div{background:var(--ok)} .xfer.err .bar>div{background:var(--err)}
+  .file{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);
+    border-radius:10px;padding:4px 6px 4px 14px}
+  .file a{flex:1;color:var(--accent);text-decoration:none;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:8px 0}
+  .file a:hover{text-decoration:underline}
+  .file .sz{color:var(--faint);font-size:12px}
+  .file .del{background:transparent;border:none;color:var(--faint);font-size:18px;padding:6px 10px;border-radius:7px}
+  .file .del:hover{color:var(--err);background:#20242e}
+  .empty{color:var(--faint);font-size:13px;text-align:center;padding:18px;border:1px dashed var(--border);border-radius:12px}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">⇅</div>
+    <div>
+      <h1>LAN Drop</h1>
+      <div class="sub">This PC is the server</div>
+    </div>
+  </div>
+
+  <div class="card" id="urlCard" style="display:none">
+    <div class="lbl">Type this URL into the phone app</div>
+    <div class="url" id="phoneUrl">…</div>
+    <div class="row mt10">
+      <button id="openFolderBtn">Open uploads folder</button>
+      <button id="pickFolderBtn">Change folder…</button>
+      <span class="spacer"></span>
+    </div>
+    <div class="dir mt10" id="dirInfo"></div>
+  </div>
+
+  <label class="drop" id="drop">
+    <input type="file" id="picker" multiple>
+    <div class="big">Drop files here, or click to pick</div>
+    <div class="hint">Adds them to the shared folder for the phone to grab</div>
+  </label>
+
+  <div class="scroll" id="xfers"></div>
+
+  <div class="section">
+    <span class="lbl">Shared files</span>
+    <button id="refreshBtn" style="padding:5px 10px;font-size:12px">Refresh</button>
+  </div>
+  <div class="scroll" id="files"><div class="empty">Loading…</div></div>
+
+<script>
+const isDesktop = new URLSearchParams(location.search).has("desktop") && window.electronAPI;
+const drop=document.getElementById("drop"),picker=document.getElementById("picker"),
+  xfers=document.getElementById("xfers"),filesDiv=document.getElementById("files");
+
+["dragenter","dragover"].forEach(e=>drop.addEventListener(e,v=>{v.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(e=>drop.addEventListener(e,v=>{v.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",v=>{[...v.dataTransfer.files].forEach(uploadFile)});
+picker.addEventListener("change",v=>{[...v.target.files].forEach(uploadFile);picker.value=""});
+
+function fmt(n){if(n<1024)return n+" B";if(n<1048576)return (n/1024).toFixed(1)+" KB";
+  if(n<1073741824)return (n/1048576).toFixed(1)+" MB";return (n/1073741824).toFixed(2)+" GB"}
+
+// Best-effort friendly label so the desktop Devices panel shows something
+// nicer than a bare IP address.
+function deviceName(){
+  if(isDesktop) return "This PC";
+  var ua=navigator.userAgent||"";
+  if(/iPhone/.test(ua)) return "iPhone";
+  if(/iPad/.test(ua)) return "iPad";
+  if(/Android/.test(ua)){var m=ua.match(/;\s*([^;)]+)\s+Build/);return m?m[1].trim():"Android phone"}
+  if(/Windows/.test(ua)) return "Windows PC";
+  if(/Macintosh/.test(ua)) return "Mac";
+  return "Browser";
+}
+
+function uploadFile(file){
+  const el=document.createElement("div");el.className="xfer";
+  el.innerHTML=`<div class="top"><span class="nm"></span><span class="st">0% · ${fmt(file.size)}</span></div><div class="bar"><div></div></div>`;
+  el.querySelector(".nm").textContent=file.name;
+  const st=el.querySelector(".st"),fill=el.querySelector(".bar>div");
+  xfers.prepend(el);
+  const xhr=new XMLHttpRequest();
+  xhr.open("POST","/upload");
+  xhr.setRequestHeader("X-Filename",encodeURIComponent(file.name));
+  xhr.setRequestHeader("X-Device-Name",encodeURIComponent(deviceName()));
+  xhr.upload.onprogress=ev=>{if(!ev.lengthComputable)return;
+    const p=Math.round(ev.loaded*100/ev.total);fill.style.width=p+"%";
+    st.textContent=p+"% · "+fmt(ev.loaded)+" / "+fmt(ev.total)};
+  xhr.onload=()=>{if(xhr.status>=200&&xhr.status<300){el.classList.add("done");
+    fill.style.width="100%";st.textContent="Done · "+fmt(file.size);refreshFiles()}
+    else{el.classList.add("err");st.textContent="Failed: "+xhr.status}};
+  xhr.onerror=()=>{el.classList.add("err");st.textContent="Network error"};
+  xhr.send(file);
+}
+
+async function refreshFiles(){
+  try{const r=await fetch("/files");const list=await r.json();
+    if(!list.length){filesDiv.innerHTML='<div class="empty">No files yet.</div>';return}
+    filesDiv.innerHTML="";
+    for(const f of list){
+      const row=document.createElement("div");row.className="file";
+      const a=document.createElement("a");a.href="/files/"+encodeURIComponent(f.name);
+      a.textContent=f.name;a.setAttribute("download",f.name);
+      const sz=document.createElement("span");sz.className="sz";sz.textContent=fmt(f.size);
+      const del=document.createElement("button");del.className="del";del.textContent="×";del.title="Delete";
+      del.onclick=async ev=>{ev.preventDefault();
+        if(!confirm("Delete "+f.name+"?"))return;
+        const res=await fetch("/files/"+encodeURIComponent(f.name),{method:"DELETE"});
+        if(res.ok)refreshFiles();else alert("Delete failed")};
+      row.append(a,sz,del);filesDiv.appendChild(row);
+    }
+  }catch(e){filesDiv.innerHTML='<div class="empty">Couldn’t list files.</div>'}
+}
+document.getElementById("refreshBtn").onclick=refreshFiles;
+
+if(isDesktop){
+  document.getElementById("urlCard").style.display="block";
+  async function info(){const i=await window.electronAPI.getInfo();
+    document.getElementById("phoneUrl").textContent=i.url;
+    document.getElementById("dirInfo").textContent="Saving to: "+i.uploadDir}
+  info();
+  document.getElementById("openFolderBtn").onclick=()=>window.electronAPI.openUploadFolder();
+  document.getElementById("pickFolderBtn").onclick=async()=>{await window.electronAPI.pickUploadFolder();await info();refreshFiles()};
+  if(window.electronAPI.onFilesChanged)window.electronAPI.onFilesChanged(refreshFiles);
+}
+refreshFiles();
+</script>
+</body>
+</html>

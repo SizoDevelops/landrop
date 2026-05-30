@@ -1,0 +1,45 @@
+name: Release Desktop
+
+# Cut a desktop release by pushing a tag like `desktop-v0.1.0`.
+on:
+  push:
+    tags:
+      - "desktop-v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # needed to create/update the GitHub Release
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: electron
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: electron/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows installers
+        run: npm run dist
+        env:
+          # Stops electron-builder from trying to auto-publish; we upload below.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            electron/dist/*.exe
+            electron/dist/*.blockmap
+            electron/dist/latest.yml
+          fail_on_unmatched_files: false
+          generate_release_notes: true
