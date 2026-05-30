@@ -29,10 +29,10 @@ jobs:
         run: npm ci
 
       - name: Build Windows installers
-        run: npm run dist
-        env:
-          # Stops electron-builder from trying to auto-publish; we upload below.
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # --publish never: electron-builder only builds the artifacts; the
+        # "Publish to GitHub Release" step below uploads them. (Passing a token
+        # here would make electron-builder try to publish itself.)
+        run: npm run dist -- --publish never
 
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
