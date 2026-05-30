@@ -647,7 +647,7 @@ export default function App() {
             <View style={s.brandRow}>
               <LogoMark size={30} />
               <Text style={s.title}>
-                PC <Text style={s.titleAccent}>File</Text> Server
+                LAN <Text style={s.titleAccent}>Drop</Text> Mobile
               </Text>
             </View>
             <View style={s.row}>
