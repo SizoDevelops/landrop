@@ -1,4 +1,4 @@
-package com.landrop.app
+package com.dropt.app
 
 import android.app.Application
 import android.content.res.Configuration

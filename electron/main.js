@@ -5,11 +5,11 @@ const fsp = require("node:fs/promises");
 const path = require("node:path");
 const os = require("node:os");
 
-const PORT = Number(process.env.LANDROP_PORT) || 8000;
-const HOST = process.env.LANDROP_HOST || "0.0.0.0";
+const PORT = Number(process.env.DROPT_PORT) || 8000;
+const HOST = process.env.DROPT_HOST || "0.0.0.0";
 const VERSION = require("./package.json").version || "0.0.0";
 let uploadDir =
-  process.env.LANDROP_UPLOAD_DIR || path.join(app.getPath("downloads"), "LANDrop");
+  process.env.DROPT_UPLOAD_DIR || path.join(app.getPath("downloads"), "Dropt");
 let mainWindow = null;
 let httpServer = null;
 let readOnly = false;
@@ -236,9 +236,9 @@ function handleRequest(req, res) {
   }
 
   // Discovery signature: the phone scans the LAN subnet hitting /ping and looks
-  // for { app: "landrop" } to tell our server apart from any other HTTP service.
+  // for { app: "dropt" } to tell our server apart from any other HTTP service.
   if (method === "GET" && p === "/ping") {
-    sendJson(res, 200, { app: "landrop", host: os.hostname(), port: PORT, readOnly });
+    sendJson(res, 200, { app: "dropt", host: os.hostname(), port: PORT, readOnly });
     return;
   }
 
@@ -473,7 +473,7 @@ function handleRequest(req, res) {
       notifyFilesChanged();
       try {
         new Notification({
-          title: "LAN Drop",
+          title: "Dropt",
           body: `Received ${savedAs}`,
         })
           .on("click", () => shell.openPath(uploadDir))
@@ -560,7 +560,7 @@ async function pickUploadFolder() {
   await fsp.mkdir(uploadDir, { recursive: true });
   notifyFilesChanged();
   if (mainWindow) {
-    mainWindow.setTitle(`LAN Drop — http://${lanIp()}:${PORT}/  ·  ${uploadDir}`);
+    mainWindow.setTitle(`Dropt — http://${lanIp()}:${PORT}/  ·  ${uploadDir}`);
   }
   return uploadDir;
 }
@@ -570,7 +570,7 @@ async function createWindow() {
 
   httpServer = http.createServer(handleRequest);
   httpServer.on("error", (err) => {
-    dialog.showErrorBox("LAN Drop", `Server failed to start on port ${PORT}: ${err.message}`);
+    dialog.showErrorBox("Dropt", `Server failed to start on port ${PORT}: ${err.message}`);
     app.quit();
   });
   await new Promise((resolve) => httpServer.listen(PORT, HOST, resolve));
@@ -586,7 +586,7 @@ async function createWindow() {
     minHeight: 520,
     backgroundColor: "#0b0e12",
     icon: path.join(__dirname, "public", "icon.png"),
-    title: `LAN Drop — http://${ip}:${PORT}/  ·  ${uploadDir}`,
+    title: `Dropt — http://${ip}:${PORT}/  ·  ${uploadDir}`,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

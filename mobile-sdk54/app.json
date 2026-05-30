@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "LAN Drop",
-    "slug": "landrop",
+    "name": "Dropt",
+    "slug": "dropt",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,10 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.landrop.app"
+      "bundleIdentifier": "com.dropt.app"
     },
     "android": {
-      "package": "com.landrop.app",
+      "package": "com.dropt.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a10"

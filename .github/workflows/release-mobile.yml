@@ -58,11 +58,11 @@ jobs:
       - name: Rename APK with version
         run: |
           VERSION="${GITHUB_REF_NAME#mobile-v}"
-          cp android/app/build/outputs/apk/release/app-release.apk "LANDrop-${VERSION}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "Dropt-${VERSION}.apk"
 
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: mobile-sdk54/LANDrop-*.apk
+          files: mobile-sdk54/Dropt-*.apk
           fail_on_unmatched_files: true
           generate_release_notes: true

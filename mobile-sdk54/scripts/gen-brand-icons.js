@@ -1,4 +1,4 @@
-// Generates app icon / splash / favicon PNGs from the LAN Drop brand spec
+// Generates app icon / splash / favicon PNGs from the Dropt brand spec
 // (brand-assets.html). Run with: node scripts/gen-brand-icons.js
 // Requires the rasterizer (build-only): npm install -D @resvg/resvg-js
 const fs = require("fs");

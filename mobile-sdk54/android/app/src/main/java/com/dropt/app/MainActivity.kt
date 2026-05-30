@@ -1,4 +1,4 @@
-package com.landrop.app
+package com.dropt.app
 
 import android.os.Build
 import android.os.Bundle

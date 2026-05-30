@@ -93,13 +93,13 @@ function getMimeType(name: string): string {
 }
 
 const INDEX_HTML = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>LAN Drop (phone)</title>
+<html lang="en"><head><meta charset="utf-8"><title>Dropt (phone)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body{font-family:system-ui;background:#0f1115;color:#e6e8ed;padding:24px;line-height:1.5}
 code{background:#1a1d24;padding:2px 6px;border-radius:4px;font-size:14px}
 h1{font-size:22px;margin:0 0 12px}p{margin:8px 0}</style>
-</head><body><h1>LAN Drop &middot; phone server</h1>
-<p>Server is running. Connect from the desktop LAN Drop app or any HTTP client.</p>
+</head><body><h1>Dropt &middot; phone server</h1>
+<p>Server is running. Connect from the desktop Dropt app or any HTTP client.</p>
 <p>Endpoints:</p>
 <ul>
 <li><code>GET /info</code></li>

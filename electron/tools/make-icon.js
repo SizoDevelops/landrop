@@ -1,4 +1,4 @@
-// Renders the LAN Drop brand mark (the same glyph used in the app topbar) into
+// Renders the Dropt brand mark (the same glyph used in the app topbar) into
 // a 1024x1024 PNG using an offscreen Electron window, then writes it to
 // build/icon.png and public/icon.png. A separate step packs it into an .ico.
 const { app, BrowserWindow } = require("electron");

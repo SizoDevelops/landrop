@@ -37,7 +37,7 @@ function req(method, p, { headers = {}, body = null } = {}) {
 }
 
 (async () => {
-  const baseDir = await fsp.mkdtemp(path.join(os.tmpdir(), "landrop-test-"));
+  const baseDir = await fsp.mkdtemp(path.join(os.tmpdir(), "dropt-test-"));
   await fsp.writeFile(path.join(baseDir, "hello.txt"), "hello world");
   await fsp.mkdir(path.join(baseDir, "sub"));
   await fsp.writeFile(path.join(baseDir, "sub", "nested.txt"), "deep");

@@ -1,13 +1,13 @@
-# LAN Drop
+# Dropt
 
-Send files between your devices over your local network — no cloud, no account, no internet round-trip. LAN Drop runs a tiny HTTP server on each device so transfers stay on your own Wi‑Fi/LAN.
+Send files between your devices over your local network — no cloud, no account, no internet round-trip. Dropt runs a tiny HTTP server on each device so transfers stay on your own Wi‑Fi/LAN.
 
 This repository is a monorepo containing both apps:
 
 | App | Path | Platform | Tech |
 | --- | --- | --- | --- |
-| **LAN Drop Desktop** | [`electron/`](electron/) | Windows | Electron + a built-in HTTP server |
-| **LAN Drop Mobile** | [`mobile-sdk54/`](mobile-sdk54/) | Android | Expo / React Native (SDK 54) |
+| **Dropt Desktop** | [`electron/`](electron/) | Windows | Electron + a built-in HTTP server |
+| **Dropt Mobile** | [`mobile-sdk54/`](mobile-sdk54/) | Android | Expo / React Native (SDK 54) |
 
 Both apps expose a small HTTP server (default port `8000`) and can act as a drop target for the other devices on the same network.
 
@@ -17,8 +17,8 @@ Both apps expose a small HTTP server (default port `8000`) and can act as a drop
 
 Pre-built binaries are published on the [Releases page](../../releases):
 
-- **Desktop (Windows):** `LANDrop-<version>-setup.exe` (installer) or `LANDrop-<version>-portable.exe`
-- **Mobile (Android):** `LANDrop-<version>.apk` — enable "Install from unknown sources" to side-load.
+- **Desktop (Windows):** `Dropt-<version>-setup.exe` (installer) or `Dropt-<version>-portable.exe`
+- **Mobile (Android):** `Dropt-<version>.apk` — enable "Install from unknown sources" to side-load.
 
 Releases are built automatically by GitHub Actions when a version tag is pushed. See [RELEASING.md](RELEASING.md).
 
@@ -60,4 +60,4 @@ Issues and pull requests are welcome. Please keep desktop changes inside `electr
 
 ## License
 
-LAN Drop is free software licensed under the **GNU General Public License v3.0 or later**. See [LICENSE](LICENSE).
+Dropt is free software licensed under the **GNU General Public License v3.0 or later**. See [LICENSE](LICENSE).

@@ -1,18 +1,18 @@
 {
-  "name": "landrop",
+  "name": "dropt",
   "version": "0.1.0",
   "private": true,
   "description": "Tiny LAN file-drop server, packaged as an Electron desktop app.",
-  "author": "LANDrop",
+  "author": "Dropt",
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SizoDevelops/landrop.git"
+    "url": "https://github.com/SizoDevelops/dropt.git"
   },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "package": "electron-packager . LANDrop --platform=win32 --arch=x64 --out=dist-packager --overwrite --prune=true --ignore=\"(^/dist-packager$|^/dist$|\\.log$|\\.err$)\"",
+    "package": "electron-packager . Dropt --platform=win32 --arch=x64 --out=dist-packager --overwrite --prune=true --ignore=\"(^/dist-packager$|^/dist$|\\.log$|\\.err$)\"",
     "dist": "electron-builder --win",
     "dist:portable": "electron-builder --win portable",
     "dist:nsis": "electron-builder --win nsis"
@@ -24,8 +24,8 @@
     "png-to-ico": "^3.0.1"
   },
   "build": {
-    "appId": "com.landrop.app",
-    "productName": "LAN Drop",
+    "appId": "com.dropt.app",
+    "productName": "Dropt",
     "directories": {
       "output": "dist"
     },
@@ -53,13 +53,13 @@
       ]
     },
     "portable": {
-      "artifactName": "LANDrop-${version}-portable.exe"
+      "artifactName": "Dropt-${version}-portable.exe"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "LANDrop-${version}-setup.exe"
+      "artifactName": "Dropt-${version}-setup.exe"
     }
   }
 }

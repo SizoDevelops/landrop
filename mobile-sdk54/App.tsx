@@ -31,8 +31,8 @@ import * as FileSystem from "expo-file-system/legacy";
 import { File as FsFile } from "expo-file-system";
 import * as Network from "expo-network";
 
-const URL_KEY = "landrop.serverUrl";
-const HISTORY_KEY = "landrop.history";
+const URL_KEY = "dropt.serverUrl";
+const HISTORY_KEY = "dropt.history";
 
 type Tab = "files" | "downloads" | "settings";
 type XferStatus = "active" | "paused" | "error";
@@ -59,7 +59,7 @@ type HistoryItem = {
 };
 type RemoteFile = { name: string; size: number };
 
-// Palette from the LAN Drop brand spec (brand-assets.html). The spec uses
+// Palette from the Dropt brand spec (brand-assets.html). The spec uses
 // oklch tokens (hue 250 cool-gray surfaces, hue 145 green accent); these are
 // the sRGB-hex equivalents since React Native can't parse oklch().
 const c = {
@@ -151,7 +151,7 @@ function hostLabel(u: string | null): string {
 // signature. Auto-detect probes the local /24 subnet for that signature.
 const SCAN_PORT = 8000;
 
-// Probe one host. Resolves to its base URL on a LAN Drop /ping match, else null.
+// Probe one host. Resolves to its base URL on a Dropt /ping match, else null.
 // Aborts on its own timeout, or when `outer` aborts (a peer already found the
 // server) so the whole scan stops the instant there's a hit.
 async function probeHost(ip: string, outer: AbortSignal): Promise<string | null> {
@@ -164,7 +164,7 @@ async function probeHost(ip: string, outer: AbortSignal): Promise<string | null>
     const res = await fetch(`http://${ip}:${SCAN_PORT}/ping`, { signal: ctrl.signal });
     if (!res.ok) return null;
     const j = await res.json();
-    return j && j.app === "landrop" ? `http://${ip}:${SCAN_PORT}` : null;
+    return j && j.app === "dropt" ? `http://${ip}:${SCAN_PORT}` : null;
   } catch {
     return null;
   } finally {
@@ -175,7 +175,7 @@ async function probeHost(ip: string, outer: AbortSignal): Promise<string | null>
 
 // Find the PC server on the current wifi subnet. Assumes a /24 mask (true for
 // virtually all home/office wifi). Scans .1–.254 in batches and returns the
-// first host that answers the LAN Drop signature.
+// first host that answers the Dropt signature.
 async function scanForServer(): Promise<string | null> {
   const ip = await Network.getIpAddressAsync();
   const parts = ip?.split(".");
@@ -238,7 +238,7 @@ export default function App() {
       if (!silent) {
         Alert.alert(
           "No server found",
-          "Couldn't find a LAN Drop PC on this wifi. Make sure the desktop app is running and your phone is on the same network — or enter the address manually."
+          "Couldn't find a Dropt PC on this wifi. Make sure the desktop app is running and your phone is on the same network — or enter the address manually."
         );
       }
       return false;
@@ -416,7 +416,7 @@ export default function App() {
     const chunked = CHUNKING_ENABLED && size > CHUNK_THRESHOLD;
     setTransfers((prev) => [{ id, name, size, progress: 0, status: "active", dir: "down", chunked }, ...prev]);
     setTab("downloads");
-    const cacheDir = `${FileSystem.cacheDirectory ?? ""}landrop/`;
+    const cacheDir = `${FileSystem.cacheDirectory ?? ""}dropt/`;
     const finalUri = cacheDir + name;
     if (chunked) chunkedDownload(id, name, size, cacheDir, finalUri);
     else singleDownload(id, name, cacheDir, finalUri);
@@ -647,7 +647,7 @@ export default function App() {
             <View style={s.brandRow}>
               <LogoMark size={30} />
               <Text style={s.title}>
-                LAN <Text style={s.titleAccent}>Drop</Text> Mobile
+                <Text style={s.titleAccent}>Drop</Text>t Mobile
               </Text>
             </View>
             <View style={s.row}>

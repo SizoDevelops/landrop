@@ -57,7 +57,7 @@ keytool -genkeypair -v \
   -alias landrop-upload \
   -keyalg RSA -keysize 2048 -validity 10000 \
   -storepass <STORE_PASSWORD> -keypass <KEY_PASSWORD> \
-  -dname "CN=LAN Drop, O=LAN Drop, C=US"
+  -dname "CN=Dropt, O=Dropt, C=US"
 
 # Encode for the GitHub secret:
 base64 -w0 landrop-upload-key.keystore > keystore.b64   # Linux
