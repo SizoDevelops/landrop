@@ -164,7 +164,9 @@ async function probeHost(ip: string, outer: AbortSignal): Promise<string | null>
     const res = await fetch(`http://${ip}:${SCAN_PORT}/ping`, { signal: ctrl.signal });
     if (!res.ok) return null;
     const j = await res.json();
-    return j && j.app === "dropt" ? `http://${ip}:${SCAN_PORT}` : null;
+    // Accept the legacy "landrop" signature too so a current phone still finds
+    // older desktop builds (and rebrands don't break discovery again).
+    return j && (j.app === "dropt" || j.app === "landrop") ? `http://${ip}:${SCAN_PORT}` : null;
   } catch {
     return null;
   } finally {
