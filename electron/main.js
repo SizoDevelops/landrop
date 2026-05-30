@@ -615,6 +615,10 @@ ipcMain.handle("get-info", () => ({
   host: os.hostname(),
 }));
 
+// On Windows, group the taskbar entry under our own AppUserModelID so the OS
+// shows our app icon (instead of the default Electron icon) when running in dev.
+if (process.platform === "win32") app.setAppUserModelId("com.dropt.app");
+
 app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {

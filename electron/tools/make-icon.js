@@ -7,8 +7,9 @@ const path = require("node:path");
 
 const SIZE = 1024;
 
-// Brand glyph authored in a 22-unit viewBox (matches the topbar logo), drawn
-// large on a rounded green tile with white strokes.
+// Brand glyph authored in a 22-unit viewBox (matches the topbar/nav-bar logo,
+// including the two keyhole dots), drawn large on a dark rounded tile with the
+// green accent strokes — the same look as the in-app nav-bar logo.
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>
   html,body{margin:0;padding:0;width:${SIZE}px;height:${SIZE}px;background:transparent}
   svg{display:block}
@@ -16,22 +17,20 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 <svg width="${SIZE}" height="${SIZE}" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#42c977"/>
-      <stop offset="1" stop-color="#138a40"/>
-    </linearGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
-      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0" stop-color="#1a1f25"/>
+      <stop offset="1" stop-color="#0d1014"/>
     </linearGradient>
   </defs>
   <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
-  <rect x="0" y="0" width="1024" height="512" rx="224" ry="224" fill="url(#sheen)"/>
+  <rect x="20" y="20" width="984" height="984" rx="204" fill="none" stroke="#2b3038" stroke-width="8"/>
   <g transform="translate(232,232) scale(25.45)"
-     fill="none" stroke="#ffffff" stroke-width="1.3"
+     stroke="#2faf5f" stroke-width="1.5"
      stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="8" width="18" height="12" rx="2"/>
-    <path d="M7 8V6a4 4 0 0 1 8 0v2"/>
-    <path d="M11 11v6m0 0 2.4-2.4m-2.4 2.4-2.4-2.4"/>
+    <rect x="2" y="8" width="18" height="12" rx="2" fill="none"/>
+    <rect x="4.4" y="14.1" width="1.9" height="1.9" rx=".6" fill="#2faf5f" stroke="none" opacity=".5"/>
+    <rect x="6.9" y="14.1" width="1.9" height="1.9" rx=".6" fill="#2faf5f" stroke="none" opacity=".5"/>
+    <path d="M7 8V6a4 4 0 0 1 8 0v2" fill="none"/>
+    <path d="M11.2 11v5m0 0 1.9-1.9m-1.9 1.9-1.9-1.9" fill="none"/>
   </g>
 </svg>
 </body></html>`;
