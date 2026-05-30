@@ -47,6 +47,14 @@ keystore-password.txt
 uploads/*
 !uploads/.gitkeep
 
+# ---- AI assistant artifacts (keep out of the public repo) ----
+.claude/
+**/.claude/
+AGENTS.md
+**/AGENTS.md
+CLAUDE.md
+**/CLAUDE.md
+
 # ---- OS / editor cruft ----
 .DS_Store
 Thumbs.db
